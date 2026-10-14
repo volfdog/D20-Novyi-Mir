@@ -35,9 +35,15 @@ jobs:
           unzip -q Godot_v4.3-stable_export_templates.tpz
           cp templates/* ~/.local/share/godot/export_templates/4.3.stable/
 
-      - name: Unpack game
+      - name: Unpack latest game
+        shell: bash
         run: |
-          unzip -q D20_Novyi_Mir_Godot_v0_2.zip -d game
+          set -euo pipefail
+          ZIP_FILE=$(find . -maxdepth 1 -type f -name 'D20_Novyi_Mir_Godot_v*.zip' | sort -V | tail -n 1)
+          test -n "$ZIP_FILE" || { echo "Game ZIP not found"; exit 1; }
+          echo "Selected: $ZIP_FILE"
+          mkdir -p game
+          unzip -q "$ZIP_FILE" -d game
           PROJECT_FILE=$(find "$PWD/game" -name project.godot -type f -print -quit)
           test -n "$PROJECT_FILE" || { echo "project.godot not found"; exit 1; }
           echo "GAME_DIR=$(dirname "$PROJECT_FILE")" >> "$GITHUB_ENV"
@@ -100,4 +106,5 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
 
