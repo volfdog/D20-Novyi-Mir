@@ -33,8 +33,8 @@ jobs:
 
       - name: Unpack game
         run: |
-          unzip -q D20_Novyi_Mir_Godot_v0_1.zip -d game
-          echo "GAME_DIR=$PWD/game/D20_Novyi_Mir_Godot_v0_1" >> "$GITHUB_ENV"
+          unzip -q D20_Novyi_Mir_Godot_v0_2.zip -d game
+          echo "GAME_DIR=$PWD/game/D20_Novyi_Mir_Godot_v0_2" >> "$GITHUB_ENV"
 
       - name: Configure Web export
         run: |
