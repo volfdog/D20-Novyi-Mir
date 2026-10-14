@@ -11,6 +11,10 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,7 +26,7 @@ jobs:
           wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
           unzip -q Godot_v4.3-stable_linux.x86_64.zip
           sudo mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
-          chmod +x /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
 
       - name: Install Web export templates
         run: |
@@ -34,7 +38,9 @@ jobs:
       - name: Unpack game
         run: |
           unzip -q D20_Novyi_Mir_Godot_v0_2.zip -d game
-          echo "GAME_DIR=$PWD/game/D20_Novyi_Mir_Godot_v0_2" >> "$GITHUB_ENV"
+          PROJECT_FILE=$(find "$PWD/game" -name project.godot -type f -print -quit)
+          test -n "$PROJECT_FILE" || { echo "project.godot not found"; exit 1; }
+          echo "GAME_DIR=$(dirname "$PROJECT_FILE")" >> "$GITHUB_ENV"
 
       - name: Configure Web export
         run: |
@@ -67,12 +73,18 @@ jobs:
           EOF
 
       - name: Import and export
+        shell: bash
         run: |
+          set -euo pipefail
           godot --headless --editor --path "$GAME_DIR" --import 2>&1 | tee import.log
-          ! grep -E "SCRIPT ERROR|Parse Error" import.log
+          if grep -E "SCRIPT ERROR|Parse Error" import.log; then
+            exit 1
+          fi
           mkdir -p site
           godot --headless --path "$GAME_DIR" --export-release Web "$PWD/site/index.html" 2>&1 | tee export.log
-          ! grep -E "SCRIPT ERROR|Parse Error|ERROR:.*Export" export.log
+          if grep -E "SCRIPT ERROR|Parse Error|ERROR:.*Export" export.log; then
+            exit 1
+          fi
           test -s site/index.html
 
       - uses: actions/upload-pages-artifact@v3
@@ -88,3 +100,4 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
